@@ -1,2 +1,2 @@
 # GiftGame
-Nidhoog-like game with level editor. :)
+See active branches :)
