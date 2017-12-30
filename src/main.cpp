@@ -2,6 +2,7 @@
 #include <SDL2/SDL.h>
 #include <list>
 #include <vector>
+#include <SDL_ttf.h>
 #include "GUI/Drawer.h"
 #include "Engine/actions/PushOutAction.h"
 #include "Engine/actions/HeroPushOut.h"
@@ -60,8 +61,24 @@ void moveObjects(list<GameObject *> list, Drawer debug) {
 }
 
 
+void drawWinnerMessage(SDL_Renderer* renderer, string msg, SDL_Color textColor, int winW, int winH) {
+    TTF_Font* Sans = TTF_OpenFont("../res/PlayfairDisplay-Regular.ttf", 99);
+
+    SDL_Surface* msgSurface = TTF_RenderText_Shaded(Sans, msg.c_str(), textColor, {0,0,0}); // as TTF_RenderText_Solid could only be used on SDL_Surface then you have to create the surface first
+    SDL_Texture* msgTexture = SDL_CreateTextureFromSurface(renderer, msgSurface); //now you can convert it into a texture
+
+    SDL_Rect textArea; //create a rect
+    textArea.w = 500;
+    textArea.h = 200;
+    textArea.x = winW/2-textArea.w/2;
+    textArea.y = winH/2-textArea.h/2;
+    SDL_RenderCopy(renderer, msgTexture, NULL, &textArea);
+
+}
+
 int main(int argc, char **argv ) {
     SDL_Init(SDL_INIT_VIDEO);
+    TTF_Init();
 
 	SDL_Window* win = SDL_CreateWindow("Physics", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 768, SDL_WINDOW_SHOWN);
 	SDL_Renderer *rend = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED);
@@ -71,116 +88,108 @@ int main(int argc, char **argv ) {
 
     Drawer d{winW, winH, rend};
 
-    list<GameObject*> objs;
-    HeroPushOut b;
-    GameObject hero2{{{-1,0},1,1}, "hero2"};
-    hero2.speed = {0,0.1};
-    hero2.addAction(&b);
-    objs.push_back(&hero2);
-
-    GameObject hero{{{0,0},1,1}, "hero"};
-    hero.speed = {0,0.1};
-    hero.addAction(&b);
-    objs.push_back(&hero);
-
-    PushOutAction a;
-    GameObject floor{{{-2,2},4,2}, "object"};
-    floor.speed = {0,0};
-    floor.addAction(&a);
-    objs.push_back(&floor);
-
-    GameObject wallR{{{9,4},2,11}, "object"};
-    wallR.speed = {0,0};
-    wallR.addAction(&a);
-    objs.push_back(&wallR);
-
-    GameObject wallL{{{-10,4},2,11}, "object"};
-    wallL.speed = {0,0};
-    wallL.addAction(&a);
-    objs.push_back(&wallL);
-
-    GameObject wallD{{{-10,-7},21,2}, "object2"};
-    wallD.speed = {0,0};
-    wallD.addAction(&a);
-    objs.push_back(&wallD);
-
-    GameObject wallU{{{-10, 6},21,2}, "object2"};
-    wallU.speed = {0,0};
-    wallU.addAction(&a);
-    objs.push_back(&wallU);
-
-
-//
-
+    bool timeToStop = false;
+    bool retryRound = false;
+    bool doMove = true;
     float zoomScale = 50;
     float value = 0.1;
-    Area visible = {{-25,15}, zoomScale, zoomScale*((float)winH)/winW};
-    d.setVisibleArea(visible);
-    bool timeToStop = false;
+
     while (!timeToStop) {
-        SDL_SetRenderDrawColor(rend, 0,0,0,0);
-        SDL_RenderClear(rend);
+        //Init game objects
+        list<GameObject*> objs;
+        HeroPushOut b;
+        GameObject hero2{{{1,0},1,1}, "hero2"};
+        hero2.speed = {0,0.1};
+        hero2.addAction(&b);
+        objs.push_back(&hero2);
 
-//        d.draw(&hero);
-        for (auto o : objs) {
-            d.draw(o);
-        }
-        d.drawCenterLine(&hero, &hero2);
-        moveObjects(objs, d);
+        GameObject hero{{{-1,0},1,1}, "hero"};
+        hero.speed = {0,0.1};
+        hero.addAction(&b);
+        objs.push_back(&hero);
 
-        if (intersect(&hero, &hero2) == UP) {
-            cout << "winner is PURPLE" << endl;
-            timeToStop = true;
-        }
-        if (intersect(&hero2, &hero) == UP) {
-            cout << "winner is GREEN" << endl;
-            timeToStop = true;
-        }
+        PushOutAction a;
+        GameObject floor{{{-2,2},4,2}, "object"};
+        floor.speed = {0,0};
+        floor.addAction(&a);
+        objs.push_back(&floor);
 
-//        moveObjects(hero, interactable);
-//
-//
-        SDL_Event e{};
-        if (SDL_PollEvent(&e)) {
-            switch (e.type) {
-                case SDL_QUIT:
-                    timeToStop = true;
-                    break;
-                case SDL_KEYDOWN:
-                    if (e.key.keysym.sym == SDLK_DOWN)  hero.speed.y = value;
-                    if (e.key.keysym.sym == SDLK_UP)    hero.speed.y = -value;
-                    if (e.key.keysym.sym == SDLK_RIGHT) hero.speed.x = value;
-                    if (e.key.keysym.sym == SDLK_LEFT)  hero.speed.x = -value;
-                    if (e.key.keysym.sym == SDLK_s)  hero2.speed.y = value;
-                    if (e.key.keysym.sym == SDLK_w)  hero2.speed.y = -value;
-                    if (e.key.keysym.sym == SDLK_d)  hero2.speed.x = value;
-                    if (e.key.keysym.sym == SDLK_a)  hero2.speed.x = -value;
-                    break;
-                default:break;
+        GameObject wallR{{{9,4},2,11}, "object"};
+        wallR.speed = {0,0};
+        wallR.addAction(&a);
+        objs.push_back(&wallR);
+
+        GameObject wallL{{{-10,4},2,11}, "object"};
+        wallL.speed = {0,0};
+        wallL.addAction(&a);
+        objs.push_back(&wallL);
+
+        GameObject wallD{{{-10,-7},21,2}, "object2"};
+        wallD.speed = {0,0};
+        wallD.addAction(&a);
+        objs.push_back(&wallD);
+
+        GameObject wallU{{{-10, 6},21,2}, "object2"};
+        wallU.speed = {0,0};
+        wallU.addAction(&a);
+        objs.push_back(&wallU);
+
+        zoomScale = 50;
+        doMove = true;
+        while (!timeToStop && !retryRound) {
+            SDL_SetRenderDrawColor(rend, 0,0,0,255);
+            SDL_RenderClear(rend);
+            Area visible = {{-25,15}, zoomScale, zoomScale*((float)winH)/winW};
+            d.setVisibleArea(visible);
+
+            SDL_Event e{};
+            if (SDL_PollEvent(&e)) {
+                switch (e.type) {
+                    case SDL_QUIT:
+                        timeToStop = true;
+                        break;
+                    case SDL_KEYDOWN:
+                        if (e.key.keysym.sym == SDLK_DOWN)  hero.speed.y = value;
+                        if (e.key.keysym.sym == SDLK_UP)    hero.speed.y = -value;
+                        if (e.key.keysym.sym == SDLK_RIGHT) hero.speed.x = value;
+                        if (e.key.keysym.sym == SDLK_LEFT)  hero.speed.x = -value;
+                        if (e.key.keysym.sym == SDLK_s)  hero2.speed.y = value;
+                        if (e.key.keysym.sym == SDLK_w)  hero2.speed.y = -value;
+                        if (e.key.keysym.sym == SDLK_d)  hero2.speed.x = value;
+                        if (e.key.keysym.sym == SDLK_a)  hero2.speed.x = -value;
+                        if (e.key.keysym.sym == SDLK_r) {
+                            retryRound = true;
+                            continue;}
+                        break;
+                    default:break;
+                }
             }
+
+            for (auto o : objs) {
+                d.draw(o);
+            }
+            d.drawCenterLine(&hero, &hero2);
+            if (doMove) moveObjects(objs, d);
+
+            if (intersect(&hero2, &hero) == UP) {
+                drawWinnerMessage(rend, "Winner is GREEEN", {0,255,0}, winW, winH);
+                doMove = false;
+            }
+            if (intersect(&hero, &hero2) == UP) {
+                drawWinnerMessage(rend, "Winner is PURPLE", {255,0,255}, winW, winH);
+                doMove = false;
+            }
+
+            if (doMove == false && zoomScale != 200) {
+                zoomScale++;
+            }
+            SDL_RenderPresent(rend);
+            SDL_Delay(10);
         }
-//
-//
-//        //Gravity
-//
-//
-        SDL_RenderPresent(rend);
-        SDL_Delay(10);
+        retryRound = false;
     }
 
-    //After game loop
-    timeToStop = false;
-    while(!timeToStop) {
-        SDL_Event e{};
-        if (SDL_PollEvent(&e)) {
-            switch (e.type) {
-                case SDL_QUIT:
-                    timeToStop = true;
-                    break;
-                default:break;
-            }
-        }
-    }
+
 }
 
 

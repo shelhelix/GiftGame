@@ -34,11 +34,11 @@ void Drawer::setVisibleArea(Area &area) {
 }
 
 void Drawer::drawCenterLine(GameObject *one, GameObject *other) {
-    //Mapping
-    Dot2D oc = one->objectArea.center;
-    Dot2D oc2 = other->objectArea.center;
-
-    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-    SDL_RenderDrawLine(renderer, (oc-startPos).x*xToPix, (oc-startPos).y*yToPix, (oc2-startPos).x*xToPix, (oc2-startPos).y*yToPix);
+//    //Mapping
+//    Dot2D oc = one->objectArea.center;
+//    Dot2D oc2 = other->objectArea.center;
+//
+//    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+//    SDL_RenderDrawLine(renderer, (oc-startPos).x*xToPix, (oc-startPos).y*yToPix, (oc2-startPos).x*xToPix, (oc2-startPos).y*yToPix);
 
 }
